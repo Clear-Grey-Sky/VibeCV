@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VibeCV · AI-Powered Resume Builder</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/9.1.6/marked.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+    <!-- Money falling animation styles -->
+    <style>
+        #moneyContainer {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 9999;
+        }
+        .money-fall {
+            position: absolute;
+            font-size: 2.5rem;
+            animation: fallDown 3s linear forwards;
+            user-select: none;
+        }
+        @keyframes fallDown {
+            0% {
+                transform: translateY(-10vh) rotate(0deg);
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(110vh) rotate(360deg);
+                opacity: 0.3;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <div class="header-content">
+                <!-- Removed the icon (sparkles emoji) and tagline as requested -->
+                <h1>VibeCV</h1>
+            </div>
+            <div id="ollamaStatus" class="status-badge status-disconnected">
+                <span class="status-dot"></span>
+                <span class="status-text">Checking connection...</span>
+            </div>
+        </header>
+
+        <div class="grid">
+            <!-- Input Panel -->
+            <div class="card input-card">
+                <div class="card-header">
+                    <h2><i class="fas fa-pen-to-square"></i> Your Information</h2>
+                    <button id="clearButton" class="btn-icon" title="Clear all">
+                        <i class="fas fa-trash-can"></i>
+                    </button>
+                </div>
+
+                <div class="field">
+                    <div class="label-row">
+                        <label for="brainDump">
+                            <i class="fas fa-brain"></i> Work Experience & Skills
+                        </label>
+                        <span id="brainDumpCount" class="char-count">0 characters</span>
+                    </div>
+                    <textarea 
+                        id="brainDump" 
+                        class="input" 
+                        rows="8" 
+                        placeholder="Just dump everything here - no need to be formal!&#10;&#10;Example:&#10;• Built a weather app with React that got 2000+ downloads&#10;• Interned at Tesla summer 2023, worked on battery analytics&#10;• Led a team of 4 on a machine learning project&#10;• Python, JavaScript, SQL, Git"></textarea>
+                    <div class="field-hints">
+                        <button class="hint-btn" data-template="developer"><i class="fas fa-code"></i> Developer Example</button>
+                        <button class="hint-btn" data-template="designer"><i class="fas fa-palette"></i> Designer Example</button>
+                        <button class="hint-btn" data-template="marketing"><i class="fas fa-bullhorn"></i> Marketing Example</button>
+                    </div>
+                </div>
+
+                <div class="field">
+                    <div class="label-row">
+                        <label for="jobDesc">
+                            <i class="fas fa-bullseye"></i> Job Description (Optional)
+                        </label>
+                        <span id="jobDescCount" class="char-count">0 characters</span>
+                    </div>
+                    <textarea 
+                        id="jobDesc" 
+                        class="input" 
+                        rows="4" 
+                        placeholder="Paste a job description to tailor your CV..."></textarea>
+                    <!-- Removed the helper note: "Adding a job description..." -->
+                </div>
+
+                <div class="action-row">
+                    <button id="generateButton" class="btn-primary">
+                        <i class="fas fa-wand-magic-sparkles"></i>
+                        <span>Generate CV</span>
+                    </button>
+                </div>
+                
+                <!-- Removed the privacy note: "100% Private · Everything runs locally..." -->
+            </div>
+
+            <!-- Output Panel -->
+            <div class="card output-card">
+                <div class="card-header">
+                    <h2><i class="fas fa-file-lines"></i> Your Resume</h2>
+                    <div class="output-actions">
+                        <button id="copyButton" class="btn-secondary" disabled title="Copy to clipboard">
+                            <i class="fas fa-copy"></i>
+                            <span class="btn-text">Copy</span>
+                        </button>
+                        <button id="editButton" class="btn-secondary" disabled title="Edit resume">
+                            <i class="fas fa-pen"></i>
+                            <span class="btn-text">Edit</span>
+                        </button>
+                        <div class="download-group">
+                            <button id="saveMdButton" class="btn-download" disabled title="Download Markdown">
+                                <i class="fas fa-file-code"></i>
+                                <span class="btn-text">MD</span>
+                            </button>
+                            <button id="savePdfButton" class="btn-download btn-download-primary" disabled title="Download PDF">
+                                <i class="fas fa-file-pdf"></i>
+                                <span class="btn-text">PDF</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="outputContainer" class="output-container">
+                    <div id="resumePreview" class="resume-preview">
+                        <div class="placeholder">
+                            <div class="placeholder-icon">
+                                <i class="fas fa-file-contract"></i>
+                            </div>
+                            <h3>Your polished resume will appear here</h3>
+                            <p>Fill in your experience and click Generate to get started</p>
+                            <div class="placeholder-features">
+                                <div class="feature-item">
+                                    <i class="fas fa-check-circle"></i>
+                                    <span>Professional formatting</span>
+                                </div>
+                                <div class="feature-item">
+                                    <i class="fas fa-check-circle"></i>
+                                    <span>Optimized for ATS systems</span>
+                                </div>
+                                <div class="feature-item">
+                                    <i class="fas fa-check-circle"></i>
+                                    <span>Export to PDF or Markdown</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Edit Mode -->
+                    <textarea id="editArea" class="edit-area" style="display: none;"></textarea>
+                    <div id="editActions" class="edit-actions" style="display: none;">
+                        <button id="saveEditButton" class="btn-primary btn-sm">
+                            <i class="fas fa-check"></i> Save Changes
+                        </button>
+                        <button id="cancelEditButton" class="btn-secondary btn-sm">
+                            <i class="fas fa-times"></i> Cancel
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Loading Overlay -->
+                <div id="loadingOverlay" class="loading-overlay" style="display: none;">
+                    <div class="loading-content">
+                        <div class="loading-spinner"></div>
+                        <p class="loading-text">Crafting your resume with AI...</p>
+                        <p class="loading-subtext">This may take 10-30 seconds</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Toast Notification -->
+        <div id="toast" class="toast"></div>
+
+        <!-- Money falling animation container -->
+        <div id="moneyContainer"></div>
+    </div>
+
+    <script src="script.js"></script>
+
+    <!-- Money falling animation script -->
+    <script>
+        (function() {
+            const moneyBtn = document.getElementById('savePdfButton');
+            const container = document.getElementById('moneyContainer');
+
+            // Emojis to use for money
+            const moneyEmojis = ['💵', '💸', '💰', '🪙', '💲'];
+
+            function spawnMoney() {
+                const count = 20; // number of falling items
+                for (let i = 0; i < count; i++) {
+                    const span = document.createElement('span');
+                    span.className = 'money-fall';
+                    // Random emoji
+                    span.textContent = moneyEmojis[Math.floor(Math.random() * moneyEmojis.length)];
+                    // Random horizontal position (0% to 100%)
+                    const left = Math.random() * 100;
+                    span.style.left = `${left}%`;
+                    // Slight variation in animation duration (2.8s - 3.2s)
+                    const duration = 2.8 + Math.random() * 0.4;
+                    span.style.animationDuration = `${duration}s`;
+                    // Add to container
+                    container.appendChild(span);
+
+                    // Remove after animation ends
+                    span.addEventListener('animationend', () => {
+                        span.remove();
+                    });
+                }
+
+                // Clean up any leftover elements after 3.5s (just in case)
+                setTimeout(() => {
+                    while (container.firstChild) {
+                        container.removeChild(container.firstChild);
+                    }
+                }, 3500);
+            }
+
+            // Attach event listener to PDF button
+            if (moneyBtn) {
+                moneyBtn.addEventListener('click', function(e) {
+                    // Only play if the button is not disabled (i.e., a resume exists)
+                    if (!moneyBtn.disabled) {
+                        spawnMoney();
+                    }
+                });
+            }
+        })();
+    </script>
+</body>
+</html>
